@@ -102,7 +102,7 @@ jobs:
           - runner: windows-11-arm
             target: aarch64-pc-windows-msvc
             asset: hyperfocus-agent-windows-aarch64.exe
-          - runner: macos-13
+          - runner: macos-latest
             target: x86_64-apple-darwin
             asset: hyperfocus-agent-macos-x86_64
           - runner: macos-latest
