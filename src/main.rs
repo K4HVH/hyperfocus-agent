@@ -13,10 +13,8 @@ mod proto;
 use core::state::AppState;
 use proto::health_service_server::HealthServiceServer;
 
-pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/src/proto/generated/descriptors.bin"
-));
+pub const FILE_DESCRIPTOR_SET: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/descriptors.bin"));
 
 #[tokio::main]
 async fn main() -> Result<()> {

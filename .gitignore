@@ -21,6 +21,9 @@ target
 #.idea/
 
 
+# Proto descriptor binary (non-deterministic across protoc versions)
+src/proto/generated/descriptors.bin
+
 # Added by cargo
 
 /target

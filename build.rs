@@ -19,8 +19,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let generated_dir = PathBuf::from("src/proto/generated");
     fs::create_dir_all(&generated_dir)?;
 
-    fs::copy(&descriptor_file, generated_dir.join("descriptors.bin"))?;
-
     for entry in fs::read_dir(&out)? {
         let entry = entry?;
         let path = entry.path();

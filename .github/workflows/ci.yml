@@ -78,7 +78,7 @@ jobs:
 
       - name: Verify generated proto code
         run: |
-          git diff --exit-code src/proto/generated/ || (echo "Generated proto code is out of date. Run 'cargo build' and commit the changes." && exit 1)
+          git diff --exit-code src/proto/generated/*.rs || (echo "Generated proto code is out of date. Run 'cargo build' and commit the changes." && exit 1)
 
       - name: Run tests
         run: cargo test
