@@ -20,9 +20,6 @@ pub enum AppError {
     #[error("already exists: {0}")]
     AlreadyExists(String),
 
-    #[error("database: {0}")]
-    Sqlx(#[from] sqlx::Error),
-
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
 }
@@ -50,7 +47,7 @@ impl From<AppError> for Status {
                 tracing::warn!(%err);
                 Status::already_exists(err.to_string())
             }
-            AppError::Internal(_) | AppError::Sqlx(_) | AppError::Anyhow(_) => {
+            AppError::Internal(_) | AppError::Anyhow(_) => {
                 tracing::error!(%err);
                 Status::internal(err.to_string())
             }

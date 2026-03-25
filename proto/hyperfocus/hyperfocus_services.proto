@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package midnight;
-import "midnight.proto";
+package hyperfocus;
+import "hyperfocus.proto";
 import "google/protobuf/empty.proto";
 
 // Generic request

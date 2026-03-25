@@ -155,23 +155,17 @@ fn to_proto_message_absent_when_healthy() {
 
 fn test_config() -> crate::core::config::Config {
     crate::core::config::Config {
-        listen_addr: "127.0.0.1:50051".to_owned(),
+        server_url: "http://localhost:50051".to_owned(),
+        auth_token: None,
+        listen_addr: "127.0.0.1:50052".to_owned(),
         log_level: "info".to_owned(),
         log_style: "plain".to_owned(),
-        cors_origins: vec!["*".to_owned()],
-        database_url: "postgres://localhost/test".to_owned(),
-        db_max_connections: 5,
-        request_timeout_secs: 30,
     }
-}
-
-fn test_pool() -> sqlx::PgPool {
-    sqlx::PgPool::connect_lazy("postgres://localhost/test").unwrap()
 }
 
 #[tokio::test]
 async fn list_health_services_returns_all() {
-    let state = AppState::new(test_config(), test_pool());
+    let state = AppState::new(test_config());
     state
         .health()
         .register(
@@ -207,7 +201,7 @@ async fn list_health_services_returns_all() {
 
 #[tokio::test]
 async fn list_health_services_empty() {
-    let state = AppState::new(test_config(), test_pool());
+    let state = AppState::new(test_config());
     let handler = HealthServiceImpl::new(Arc::clone(&state));
 
     let response = handler
@@ -219,7 +213,7 @@ async fn list_health_services_empty() {
 
 #[tokio::test]
 async fn get_health_service_by_uuid() {
-    let state = AppState::new(test_config(), test_pool());
+    let state = AppState::new(test_config());
     let id = state
         .health()
         .register(
@@ -244,12 +238,12 @@ async fn get_health_service_by_uuid() {
 }
 
 #[tokio::test]
-async fn get_health_service_empty_id_returns_server() {
-    let state = AppState::new(test_config(), test_pool());
+async fn get_health_service_empty_id_returns_agent() {
+    let state = AppState::new(test_config());
     state
         .health()
         .register(
-            "server",
+            "agent",
             Duration::from_secs(60),
             Some("0.1.0".to_owned()),
             Box::new(|| Box::pin(async { Ok(()) })),
@@ -262,16 +256,16 @@ async fn get_health_service_empty_id_returns_server() {
         .await
         .unwrap();
 
-    assert_eq!(response.get_ref().name, "server");
+    assert_eq!(response.get_ref().name, "agent");
 }
 
 #[tokio::test]
-async fn get_health_service_no_id_field_returns_server() {
-    let state = AppState::new(test_config(), test_pool());
+async fn get_health_service_no_id_field_returns_agent() {
+    let state = AppState::new(test_config());
     state
         .health()
         .register(
-            "server",
+            "agent",
             Duration::from_secs(60),
             None,
             Box::new(|| Box::pin(async { Ok(()) })),
@@ -286,12 +280,12 @@ async fn get_health_service_no_id_field_returns_server() {
         .await
         .unwrap();
 
-    assert_eq!(response.get_ref().name, "server");
+    assert_eq!(response.get_ref().name, "agent");
 }
 
 #[tokio::test]
 async fn get_health_service_invalid_uuid_returns_error() {
-    let state = AppState::new(test_config(), test_pool());
+    let state = AppState::new(test_config());
     let handler = HealthServiceImpl::new(Arc::clone(&state));
 
     let result = handler
@@ -306,7 +300,7 @@ async fn get_health_service_invalid_uuid_returns_error() {
 
 #[tokio::test]
 async fn get_health_service_unknown_uuid_returns_not_found() {
-    let state = AppState::new(test_config(), test_pool());
+    let state = AppState::new(test_config());
     let handler = HealthServiceImpl::new(Arc::clone(&state));
 
     let result = handler
@@ -320,8 +314,8 @@ async fn get_health_service_unknown_uuid_returns_not_found() {
 }
 
 #[tokio::test]
-async fn get_health_service_no_server_registered_returns_not_found() {
-    let state = AppState::new(test_config(), test_pool());
+async fn get_health_service_no_agent_registered_returns_not_found() {
+    let state = AppState::new(test_config());
     let handler = HealthServiceImpl::new(Arc::clone(&state));
 
     let result = handler

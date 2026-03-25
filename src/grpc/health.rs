@@ -64,9 +64,9 @@ impl HealthService for HealthServiceImpl {
         let health = if id.is_empty() {
             self.state
                 .health()
-                .get_by_name("server")
+                .get_by_name("agent")
                 .await
-                .ok_or_else(|| AppError::NotFound("server service not registered".into()))?
+                .ok_or_else(|| AppError::NotFound("agent service not registered".into()))?
         } else {
             let uuid = uuid::Uuid::parse_str(id)
                 .map_err(|_| AppError::InvalidArgument(format!("invalid uuid: {id}")))?;

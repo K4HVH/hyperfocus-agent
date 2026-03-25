@@ -6,14 +6,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tonic_prost_build::configure()
         .build_server(true)
-        .build_client(false)
+        .build_client(true)
         .file_descriptor_set_path(&descriptor_file)
         .compile_protos(
             &[
-                "proto/midnight/midnight.proto",
-                "proto/midnight/midnight_services.proto",
+                "proto/hyperfocus/hyperfocus.proto",
+                "proto/hyperfocus/hyperfocus_services.proto",
             ],
-            &["proto/midnight/"],
+            &["proto/hyperfocus/"],
         )?;
 
     let generated_dir = PathBuf::from("src/proto/generated");

@@ -6,13 +6,11 @@ static ENV_LOCK: Mutex<()> = Mutex::new(());
 fn with_env(vars: &[(&str, &str)], f: impl FnOnce() + std::panic::UnwindSafe) {
     let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let all_keys = [
+        "SERVER_URL",
+        "AUTH_TOKEN",
         "LISTEN_ADDR",
         "LOG_LEVEL",
         "LOG_STYLE",
-        "CORS_ORIGINS",
-        "DATABASE_URL",
-        "DB_MAX_CONNECTIONS",
-        "REQUEST_TIMEOUT_SECS",
     ];
     unsafe {
         for key in &all_keys {
@@ -35,14 +33,13 @@ fn with_env(vars: &[(&str, &str)], f: impl FnOnce() + std::panic::UnwindSafe) {
 
 #[test]
 fn defaults_applied_when_env_unset() {
-    with_env(&[("DATABASE_URL", "postgres://localhost/test")], || {
+    with_env(&[], || {
         let config = Config::from_env();
-        assert_eq!(config.listen_addr, "0.0.0.0:50051");
+        assert_eq!(config.server_url, "http://localhost:50051");
+        assert!(config.auth_token.is_none());
+        assert_eq!(config.listen_addr, "127.0.0.1:50052");
         assert_eq!(config.log_level, "info");
         assert_eq!(config.log_style, "auto");
-        assert_eq!(config.cors_origins, vec!["*"]);
-        assert_eq!(config.db_max_connections, 20);
-        assert_eq!(config.request_timeout_secs, 30);
     });
 }
 
@@ -50,68 +47,29 @@ fn defaults_applied_when_env_unset() {
 fn env_vars_override_defaults() {
     with_env(
         &[
-            ("LISTEN_ADDR", "127.0.0.1:9090"),
+            ("SERVER_URL", "https://hyperfocus.example.com:50051"),
+            ("AUTH_TOKEN", "secret-token-123"),
+            ("LISTEN_ADDR", "0.0.0.0:9090"),
             ("LOG_LEVEL", "debug"),
             ("LOG_STYLE", "json"),
-            ("CORS_ORIGINS", "http://a.com,http://b.com"),
-            ("DATABASE_URL", "postgres://localhost/test"),
-            ("DB_MAX_CONNECTIONS", "20"),
-            ("REQUEST_TIMEOUT_SECS", "10"),
         ],
         || {
             let config = Config::from_env();
-            assert_eq!(config.listen_addr, "127.0.0.1:9090");
+            assert_eq!(config.server_url, "https://hyperfocus.example.com:50051");
+            assert_eq!(config.auth_token.as_deref(), Some("secret-token-123"));
+            assert_eq!(config.listen_addr, "0.0.0.0:9090");
             assert_eq!(config.log_level, "debug");
             assert_eq!(config.log_style, "json");
-            assert_eq!(config.cors_origins, vec!["http://a.com", "http://b.com"]);
-            assert_eq!(config.db_max_connections, 20);
-            assert_eq!(config.request_timeout_secs, 10);
         },
     );
 }
 
 #[test]
-#[should_panic(expected = "DATABASE_URL must be set")]
-fn panics_without_database_url() {
+fn auth_token_is_optional() {
     with_env(&[], || {
-        Config::from_env();
-    });
-}
-
-#[test]
-fn cors_is_permissive_with_wildcard() {
-    with_env(&[("DATABASE_URL", "postgres://localhost/test")], || {
         let config = Config::from_env();
-        assert!(config.cors_is_permissive());
+        assert!(config.auth_token.is_none());
     });
-}
-
-#[test]
-fn cors_is_not_permissive_with_specific_origins() {
-    with_env(
-        &[
-            ("CORS_ORIGINS", "http://localhost:3000"),
-            ("DATABASE_URL", "postgres://localhost/test"),
-        ],
-        || {
-            let config = Config::from_env();
-            assert!(!config.cors_is_permissive());
-        },
-    );
-}
-
-#[test]
-fn cors_origins_trimmed() {
-    with_env(
-        &[
-            ("CORS_ORIGINS", " http://a.com , http://b.com "),
-            ("DATABASE_URL", "postgres://localhost/test"),
-        ],
-        || {
-            let config = Config::from_env();
-            assert_eq!(config.cors_origins, vec!["http://a.com", "http://b.com"]);
-        },
-    );
 }
 
 #[test]

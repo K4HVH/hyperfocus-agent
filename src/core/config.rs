@@ -1,36 +1,22 @@
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Config {
+    pub server_url: String,
+    pub auth_token: Option<String>,
     pub listen_addr: String,
     pub log_level: String,
     pub log_style: String,
-    pub cors_origins: Vec<String>,
-    pub database_url: String,
-    pub db_max_connections: u32,
-    pub request_timeout_secs: u64,
 }
 
 impl Config {
     pub fn from_env() -> Self {
         Self {
-            listen_addr: env_or("LISTEN_ADDR", "0.0.0.0:50051"),
+            server_url: env_or("SERVER_URL", "http://localhost:50051"),
+            auth_token: std::env::var("AUTH_TOKEN").ok(),
+            listen_addr: env_or("LISTEN_ADDR", "127.0.0.1:50052"),
             log_level: env_or("LOG_LEVEL", "info"),
             log_style: env_or("LOG_STYLE", "auto"),
-            cors_origins: env_or("CORS_ORIGINS", "*")
-                .split(',')
-                .map(|s| s.trim().to_owned())
-                .collect(),
-            database_url: std::env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
-            db_max_connections: env_or("DB_MAX_CONNECTIONS", "20")
-                .parse()
-                .expect("DB_MAX_CONNECTIONS must be a valid integer"),
-            request_timeout_secs: env_or("REQUEST_TIMEOUT_SECS", "30")
-                .parse()
-                .expect("REQUEST_TIMEOUT_SECS must be a valid integer"),
         }
-    }
-
-    pub fn cors_is_permissive(&self) -> bool {
-        self.cors_origins.iter().any(|o| o == "*")
     }
 }
 

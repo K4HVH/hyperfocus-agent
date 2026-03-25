@@ -1,8 +1,6 @@
-# MidnightServer
+# hyperfocus-agent
 
-Rust gRPC backend template using [tonic](https://github.com/hyperium/tonic). Server counterpart to [MidnightUI](https://github.com/k4hvh/MidnightUI).
-
-gRPC + gRPC-Web, PostgreSQL (SQLx, compile-time checked queries, auto-migrations), active health probes, structured logging, CORS, graceful shutdown.
+Local agent for [hyperfocus](https://hyperfocus.k4tech.net) — a game macro tool. Runs near the game, receives configuration from the server, and executes macros.
 
 ## Setup
 
@@ -16,25 +14,7 @@ sudo dnf install protobuf-compiler protobuf-devel
 sudo apt install protobuf-compiler libprotobuf-dev
 ```
 
-[Rust](https://rustup.rs/) (edition 2024) and [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/) for the database.
-
-Optional:
-
-```sh
-cargo install sqlx-cli --no-default-features --features postgres  # migration management
-cargo install grpcurl                                              # gRPC testing
-```
-
-### Database
-
-```sh
-docker run -d --name midnight-postgres \
-  -e POSTGRES_USER=midnight \
-  -e POSTGRES_PASSWORD=midnight \
-  -e POSTGRES_DB=midnight \
-  -p 5432:5432 \
-  postgres:17-alpine
-```
+[Rust](https://rustup.rs/) (edition 2024).
 
 ### Run
 
@@ -43,23 +23,12 @@ cp .env.example .env
 cargo run
 ```
 
-Connects to Postgres, runs migrations, listens on `0.0.0.0:50051`.
+Starts the agent and exposes a health endpoint on `127.0.0.1:50052`.
 
 ### Test
 
 ```sh
-SQLX_OFFLINE=true cargo test
-
-# gRPC (requires grpcurl)
-grpcurl -plaintext localhost:50051 list
-grpcurl -plaintext localhost:50051 midnight.HealthService/ListHealthServices
-```
-
-### Docker build
-
-```sh
-docker build -t midnight-server .
-docker run -e DATABASE_URL=postgres://midnight:midnight@host.docker.internal:5432/midnight midnight-server
+cargo test
 ```
 
 ## Configuration
@@ -68,41 +37,35 @@ All via environment variables (see [.env.example](.env.example)):
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | *(required)* | PostgreSQL connection string |
-| `LISTEN_ADDR` | `0.0.0.0:50051` | Server bind address |
+| `SERVER_URL` | `http://localhost:50051` | hyperfocus-server gRPC endpoint |
+| `AUTH_TOKEN` | *(optional)* | Authentication token for server |
+| `LISTEN_ADDR` | `127.0.0.1:50052` | Agent health endpoint bind address |
 | `LOG_LEVEL` | `info` | Tracing filter directive |
 | `LOG_STYLE` | `auto` | `plain`, `compact`, `pretty`, `json`, or `auto` |
-| `CORS_ORIGINS` | `*` | Comma-separated origins, or `*` |
-| `REQUEST_TIMEOUT_SECS` | `30` | Per-request gRPC timeout |
-| `DB_MAX_CONNECTIONS` | `20` | Max database pool connections |
 
 ## Project layout
 
 ```
-proto/midnight/          Protobuf definitions
-migrations/              SQL migrations (auto-run on startup)
+proto/hyperfocus/        Protobuf definitions (shared with server)
 src/
-  main.rs                Server entrypoint
+  main.rs                Agent entrypoint
   core/
     config.rs            Env-based config
-    db.rs                Pool + migrations
-    error.rs             AppError → gRPC Status
+    error.rs             AppError -> gRPC Status
     health.rs            Probe-based HealthRegistry
     logging.rs           Tracing setup (4 styles)
-    state.rs             AppState (config, db, health, uptime)
+    state.rs             AppState (config, health, uptime)
   grpc/
     health.rs            Health service RPCs
   proto/                 Generated protobuf code
 tests/                   Unit tests
 ```
 
-## Adding a service
+## Template
 
-1. Add a `.proto` file in `proto/midnight/`
-2. `cargo build` (codegen runs automatically)
-3. Implement the generated trait in `src/grpc/`
-4. Register it in `Server::builder()` in `main.rs`
+Based on [MidnightServer](https://github.com/k4hvh/midnightserver). The `template` remote is kept for pulling upstream fixes:
 
-## License
-
-GNU GPL V3
+```sh
+git fetch template
+git merge template/main --allow-unrelated-histories
+```
