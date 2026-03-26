@@ -1,6 +1,8 @@
 # hyperfocus-agent
 
-Local agent for [hyperfocus](https://hyperfocus.k4tech.net) — a game macro tool. Runs near the game, receives configuration from the server, and executes macros.
+The local agent for [hyperfocus](https://hyperfocus.k4tech.net) — a 2PC game macro platform. Runs on the second PC, processes video from the gaming PC, and controls the mouse via [MAKCU](https://github.com/k4hvh/makcu) hardware.
+
+Hyperfocus is the successor to [FOCUS](https://github.com/K4HVH/focus-cpp). Where FOCUS ran everything on the gaming PC (making it vulnerable to detection), hyperfocus uses a 2PC architecture: PC1 streams its screen via an OBS plugin, PC2 (this agent) does all processing and sends mouse commands back through MAKCU hardware.
 
 ## Setup
 
@@ -43,6 +45,26 @@ All via environment variables (see [.env.example](.env.example)):
 | `LOG_LEVEL` | `info` | Tracing filter directive |
 | `LOG_STYLE` | `auto` | `plain`, `compact`, `pretty`, `json`, or `auto` |
 
+## How it works
+
+```
+[Mouse] --USB--> [MAKCU] --USB--> [PC1 (game)]
+                    ^                  |
+                    | USB serial    OBS plugin (UDP video x2)
+                    |                  |
+                 [PC2 (agent)] <-------+
+                    |
+                    | gRPC
+                    v
+              [Cloud server] <---> [Web UI]
+```
+
+- **PC1** runs the game and an OBS plugin that sends two UDP video streams to PC2
+- **PC2** runs this agent, which processes the streams (detectors, AI) and sends mouse commands to MAKCU
+- **MAKCU** hardware sits between the mouse and PC1, intercepting/injecting mouse traffic via USB passthrough
+- The agent connects to the cloud server via gRPC for config, auth, and status reporting
+- The agent has no UI — all user control is through the web interface
+
 ## Project layout
 
 ```
@@ -60,6 +82,14 @@ src/
   proto/                 Generated protobuf code
 tests/                   Unit tests
 ```
+
+## Releases
+
+CI automatically builds release binaries for all platforms when the version in `Cargo.toml` is bumped on main:
+
+- Linux (x86_64, aarch64)
+- Windows (x86_64, aarch64)
+- macOS (x86_64, aarch64)
 
 ## Template
 
